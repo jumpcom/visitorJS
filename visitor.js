@@ -3,7 +3,7 @@
 visitor.js
 MIT License
 
-Copyright (c) Chirag Jain
+Copyright (c) Chirag Jain Updated by Jump
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -14,6 +14,12 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 This product includes GeoLite data created by MaxMind, available from http://maxmind.com/.
 
 */
+
+function uuidv4() {
+    return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+      (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+    );
+  }
 
 var visitor = {};
 (function() {
@@ -193,32 +199,35 @@ var visitor = {};
                 visitor.first_visit_on = curr_date;
                 visitor.current_visit_on = visitor.first_visit;
             }
+
+            localStorage.setItem('userdata', JSON.stringify(visitor));
+
+            if(!localStorage.getItem('UID'))
+            localStorage.setItem('UID', uuidv4());
         };
         
 
         /* load geoip script and expose data through visitor object */
-        loadscript('http://j.maxmind.com/app/geoip.js', function(){
-            /* browser data */
-            visitor.browser_name = BrowserDetect.browser;
-            visitor.browser_version = BrowserDetect.version;
-            visitor.browser_engine = navigator.product;
-            visitor.os = BrowserDetect.OS;
-            visitor.screen_resolution = screen.width+'x'+screen.height;
-            visitor.screen_width = screen.width;
-            visitor.screen_height = screen.height;
-            visitor.referrer = document.referrer;
-            visitor.url = window.location.href;
-            visitor.language = navigator.language; 
-            /* Geo data */
-            visitor.country_code = geoip_country_code();
-            visitor.country_name = geoip_country_name();
-            visitor.city = geoip_city();
-            visitor.region = geoip_region();
-            visitor.region_name = geoip_region_name();
-            visitor.latitude = geoip_latitude();
-            visitor.longitude = geoip_longitude();
-            visitor.postal_code = geoip_postal_code();
-            /* session data */
-            load_visitor_session();
+        loadscript('//cdnjs.cloudflare.com/ajax/libs/userinfo/1.1.0/userinfo.min.js', function(){
+
+                UserInfo.getInfo(function(location) {
+                    /* browser data */
+                visitor.browser_name = BrowserDetect.browser;
+                visitor.browser_version = BrowserDetect.version;
+                visitor.browser_engine = navigator.product;
+                visitor.os = BrowserDetect.OS;
+                visitor.screen_resolution = screen.width+'x'+screen.height;
+                visitor.screen_width = screen.width;
+                visitor.screen_height = screen.height;
+                visitor.referrer = document.referrer;
+                visitor.url = window.location.href;
+                visitor.language = navigator.language; 
+                /* Geo data */
+                visitor = {...visitor,...location};
+                /* session data */
+                load_visitor_session();
+              }, function(err) {
+                // the "err" object contains useful information in case of an error
+              });
         }); 
 }) ();
